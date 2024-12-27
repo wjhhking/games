@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, send_file
 from flask_sock import Sock
 from treys import Card, Evaluator, Deck
 from itertools import combinations
@@ -20,7 +20,9 @@ def calculate_remaining_combos_with_blocked_cards(player1_hand, player2_hand):
 
 @app.route("/")
 def home():
-    return "Welcome to Card Battle!"
+    # Serve the card_battle.html file from the same directory
+    html_path = os.path.join(os.path.dirname(__file__), "card_battle.html")
+    return send_file(html_path)
 
 
 @sock.route("/evaluate")
