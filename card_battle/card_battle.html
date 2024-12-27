@@ -81,7 +81,9 @@
             const formData = new FormData(document.getElementById("pokerForm"));
             const payload = JSON.stringify(Object.fromEntries(formData));
 
-            const socket = new WebSocket(`ws://${window.location.host}/evaluate`);
+            // Dynamically determine WebSocket protocol (ws or wss)
+            const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+            const socket = new WebSocket(`${protocol}://${window.location.host}/evaluate`);
 
             socket.onopen = () => {
                 console.log("WebSocket connection established.");
@@ -90,6 +92,7 @@
             };
 
             socket.onmessage = (event) => {
+                console.log("Message received:", event.data);
                 const data = JSON.parse(event.data);
 
                 if (data.type === "status") {
@@ -108,11 +111,13 @@
                         Tie Probability: ${data.tie_prob}%<br>
                         Total Games Played: ${data.total_games}`;
                     socket.close();
+                } else if (data.type === "error") {
+                    document.getElementById("progress").innerText = "Error: " + data.message;
                 }
             };
 
             socket.onerror = (error) => {
-                console.error("WebSocket error:", error);
+                console.error("WebSocket error occurred:", error);
                 document.getElementById("progress").innerText = "An error occurred. Please try again.";
             };
 
