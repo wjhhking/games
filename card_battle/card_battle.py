@@ -27,6 +27,10 @@ def home():
 
 @sock.route("/evaluate")
 def evaluate(socket):
+    # Notify frontend and log in the terminal
+    print("Evaluating: ")
+    socket.send(json.dumps({"type": "status", "message": "Evaluating..."}))
+
     data = socket.receive()
     data = json.loads(data)
 
@@ -51,7 +55,8 @@ def evaluate(socket):
         else:
             ties += 1
 
-        if (i + 1) % 100_000 == 0 or (i + 1) == total_games:
+        # Send progress updates every 10,000 games
+        if (i + 1) % 10_000 == 0 or (i + 1) == total_games:
             socket.send(json.dumps({
                 "type": "progress",
                 "games_played": i + 1,
@@ -61,6 +66,7 @@ def evaluate(socket):
                 "tie_prob": round((ties / (i + 1)) * 100, 2),
             }))
 
+    # Send the final results
     socket.send(json.dumps({
         "type": "final",
         "total_games": total_games,

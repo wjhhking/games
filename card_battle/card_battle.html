@@ -85,14 +85,16 @@
 
             socket.onopen = () => {
                 console.log("WebSocket connection established.");
-                document.getElementById("progress").innerText = "Game evaluation started...";
+                document.getElementById("progress").innerText = "Initializing evaluation...";
                 socket.send(payload);
             };
 
             socket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
 
-                if (data.type === "progress") {
+                if (data.type === "status") {
+                    document.getElementById("progress").innerText = data.message;
+                } else if (data.type === "progress") {
                     document.getElementById("progress").innerText = `
                         Games Played: ${data.games_played} / ${data.total_games} |
                         Player 1: ${data.player1_win_prob}% |
