@@ -1,0 +1,6 @@
+services:
+- type: web
+  name: card-battle
+  env: python
+  buildCommand: pip install -r requirements.txt
+  startCommand: python card_battle.py
