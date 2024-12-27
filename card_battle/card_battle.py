@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_sock import Sock
 from treys import Card, Evaluator, Deck
@@ -15,6 +16,11 @@ def calculate_remaining_combos_with_blocked_cards(player1_hand, player2_hand):
     blocked_cards = player1_hand + player2_hand
     deck.cards = [card for card in deck.cards if card not in blocked_cards]
     return list(combinations(deck.cards, 5))
+
+
+@app.route("/")
+def home():
+    return "Welcome to Card Battle!"
 
 
 @sock.route("/evaluate")
@@ -43,7 +49,6 @@ def evaluate(socket):
         else:
             ties += 1
 
-        # Send progress updates every 100,000 games or on the final iteration
         if (i + 1) % 100_000 == 0 or (i + 1) == total_games:
             socket.send(json.dumps({
                 "type": "progress",
@@ -54,7 +59,6 @@ def evaluate(socket):
                 "tie_prob": round((ties / (i + 1)) * 100, 2),
             }))
 
-    # Send final results
     socket.send(json.dumps({
         "type": "final",
         "total_games": total_games,
@@ -63,5 +67,7 @@ def evaluate(socket):
         "tie_prob": round((ties / total_games) * 100, 2),
     }))
 
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
