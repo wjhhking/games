@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MMLU Quiz - Question</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background-color: #f9f9f9; padding: 20px; border-radius: 10px; }
+        h1 { color: #333; }
+        .question { margin: 20px 0; font-size: 18px; }
+        .options { margin: 20px 0; }
+        .option {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #eee;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .option:hover { background-color: #ddd; }
+        /* Keep radio buttons visible but prevent them from capturing clicks */
+        .option input[type="radio"] {
+            pointer-events: none;
+        }
+        /* Allow the whole option to be clickable */
+        .option label {
+            display: inline-block;
+            pointer-events: none;
+        }
+        button { padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .flash { padding: 10px; background-color: #ffdddd; color: #ff0000; margin: 10px 0; border-radius: 5px; }
+        .progress { margin-bottom: 20px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MMLU Quiz</h1>
+
+        {% if get_flashed_messages() %}
+            {% for message in get_flashed_messages() %}
+                <div class="flash">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="progress">
+            Question {{ question.index + 1 }} of {{ question.total_questions }}
+        </div>
+
+        <div class="question">
+            <h2>{{ question.question }}</h2>
+        </div>
+
+        <form action="/submit_answer" method="post">
+            <div class="options">
+                {% for key, value in question.options.items() %}
+                    <div class="option" onclick="selectOption('{{ key }}')">
+                        <input type="radio" name="answer" value="{{ key }}" id="option-{{ key }}" required>
+                        <label for="option-{{ key }}">{{ key }}. {{ value }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <button type="submit">Submit Answer</button>
+        </form>
+    </div>
+
+    <script>
+        function selectOption(key) {
+            // First, uncheck all radio buttons
+            document.querySelectorAll('input[name="answer"]').forEach(radio => {
+                radio.checked = false;
+            });
+
+            // Then check the selected one
+            document.getElementById('option-' + key).checked = true;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Battle</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        select, button {
+            margin: 5px;
+        }
+        #progress {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #final-result {
+            margin-top: 20px;
+            font-weight: bold;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Card Battle</h1>
+    <form id="pokerForm">
+        <div>
+            <h2>Player 1</h2>
+            <label for="p1_card1">Card 1:</label>
+            <select id="p1_card1" name="p1_card1"></select>
+            <label for="p1_card2">Card 2:</label>
+            <select id="p1_card2" name="p1_card2"></select>
+        </div>
+        <div>
+            <h2>Player 2</h2>
+            <label for="p2_card1">Card 1:</label>
+            <select id="p2_card1" name="p2_card1"></select>
+            <label for="p2_card2">Card 2:</label>
+            <select id="p2_card2" name="p2_card2"></select>
+        </div>
+        <button type="button" onclick="evaluateHands()">Evaluate Hands</button>
+    </form>
+    <div id="progress"></div>
+    <div id="final-result"></div>
+
+    <script>
+        const cardValues = [
+            "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s", "Ts", "Js", "Qs", "Ks", "As",
+            "2h", "3h", "4h", "5h", "6h", "7h", "8h", "9h", "Th", "Jh", "Qh", "Kh", "Ah",
+            "2d", "3d", "4d", "5d", "6d", "7d", "8d", "9d", "Td", "Jd", "Qd", "Kd", "Ad",
+            "2c", "3c", "4c", "5c", "6c", "7c", "8c", "9c", "Tc", "Jc", "Qc", "Kc", "Ac"
+        ];
+
+        const defaultSelections = {
+            p1_card1: "As",
+            p1_card2: "Ah",
+            p2_card1: "Kc",
+            p2_card2: "Qd"
+        };
+
+        function populateDropdowns() {
+            const dropdowns = document.querySelectorAll("select");
+            dropdowns.forEach(dropdown => {
+                cardValues.forEach(card => {
+                    const option = document.createElement("option");
+                    option.value = card;
+                    option.textContent = card;
+                    if (dropdown.id in defaultSelections && defaultSelections[dropdown.id] === card) {
+                        option.selected = true;
+                    }
+                    dropdown.appendChild(option);
+                });
+            });
+        }
+
+        window.onload = populateDropdowns;
+
+        function evaluateHands() {
+            const formData = new FormData(document.getElementById("pokerForm"));
+            const payload = JSON.stringify(Object.fromEntries(formData));
+
+            // Dynamically determine WebSocket protocol (ws or wss)
+            const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+            const socket = new WebSocket(`${protocol}://${window.location.host}/evaluate`);
+
+            socket.onopen = () => {
+                console.log("WebSocket connection established.");
+                document.getElementById("progress").innerText = "Initializing evaluation...";
+                socket.send(payload);
+            };
+
+            socket.onmessage = (event) => {
+                console.log("Message received:", event.data);
+                const data = JSON.parse(event.data);
+
+                if (data.type === "status") {
+                    document.getElementById("progress").innerText = data.message;
+                } else if (data.type === "progress") {
+                    document.getElementById("progress").innerText = `
+                        Games Played: ${data.games_played} / ${data.total_games} |
+                        Player 1: ${data.player1_win_prob}% |
+                        Player 2: ${data.player2_win_prob}% |
+                        Draw: ${data.tie_prob}%`;
+                } else if (data.type === "final") {
+                    document.getElementById("final-result").innerHTML = `
+                        Final Results:<br>
+                        Player 1 Win Probability: ${data.player1_win_prob}%<br>
+                        Player 2 Win Probability: ${data.player2_win_prob}%<br>
+                        Tie Probability: ${data.tie_prob}%<br>
+                        Total Games Played: ${data.total_games}`;
+                    socket.close();
+                } else if (data.type === "error") {
+                    document.getElementById("progress").innerText = "Error: " + data.message;
+                }
+            };
+
+            socket.onerror = (error) => {
+                console.error("WebSocket error occurred:", error);
+                document.getElementById("progress").innerText = "An error occurred. Please try again.";
+            };
+
+            socket.onclose = () => {
+                console.log("WebSocket connection closed.");
+            };
+        }
+    </script>
+</body>
+</html>

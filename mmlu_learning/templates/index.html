@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MMLU Quiz</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background-color: #f9f9f9; padding: 20px; border-radius: 10px; }
+        h1, h2 { color: #333; }
+        .select-subject { margin: 20px 0; }
+        input, button { padding: 10px; font-size: 16px; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; margin-right: 5px; }
+        button:hover { background-color: #45a049; }
+        .flash { padding: 10px; background-color: #ffdddd; color: #ff0000; margin: 10px 0; border-radius: 5px; }
+        .subject-list {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        .subject-btn {
+            background-color: #eee;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .subject-btn:hover {
+            background-color: #ddd;
+        }
+        .filter-buttons {
+            margin: 15px 0;
+        }
+        .filter-btn {
+            background-color: #eee;
+            color: #333;
+        }
+        .filter-btn.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .search-box {
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MMLU Quiz</h1>
+
+        {% if get_flashed_messages() %}
+            {% for message in get_flashed_messages() %}
+                <div class="flash">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="select-subject">
+            <h2>Select a Subject</h2>
+
+            <input type="text" id="search-input" class="search-box" placeholder="Search subjects...">
+
+            <div class="filter-buttons">
+                <button id="all-btn" class="filter-btn active">All</button>
+                <button id="high-school-btn" class="filter-btn">High School</button>
+                <button id="college-btn" class="filter-btn">College</button>
+                <button id="professional-btn" class="filter-btn">Professional</button>
+            </div>
+
+            <form action="/load_subject" method="post">
+                <div id="subject-list" class="subject-list">
+                    <!-- Subjects will be populated here -->
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Simple subject filtering system
+        const subjects = [
+            {% for subject in subjects %}
+                {id: "{{ subject }}", name: "{{ subject | replace('_', ' ') | title }}"},
+            {% endfor %}
+        ];
+
+        const searchInput = document.getElementById('search-input');
+        const subjectList = document.getElementById('subject-list');
+        const allBtn = document.getElementById('all-btn');
+        const highSchoolBtn = document.getElementById('high-school-btn');
+        const collegeBtn = document.getElementById('college-btn');
+        const professionalBtn = document.getElementById('professional-btn');
+
+        let currentFilter = '';
+
+        // Display subjects that match current filters
+        function displaySubjects() {
+            const searchText = searchInput.value.toLowerCase();
+            subjectList.innerHTML = '';
+
+            subjects.forEach(subject => {
+                if ((currentFilter === '' || subject.id.includes(currentFilter)) &&
+                    (searchText === '' || subject.id.includes(searchText) || subject.name.toLowerCase().includes(searchText))) {
+
+                    const btn = document.createElement('button');
+                    btn.className = 'subject-btn';
+                    btn.textContent = subject.name;
+                    btn.type = 'submit';
+                    btn.name = 'subject';
+                    btn.value = subject.id;
+
+                    subjectList.appendChild(btn);
+                }
+            });
+
+            if (subjectList.children.length === 0) {
+                subjectList.innerHTML = '<p>No subjects found matching your criteria</p>';
+            }
+        }
+
+        // Set active filter button
+        function setActiveFilter(filter, button) {
+            currentFilter = filter;
+
+            allBtn.classList.remove('active');
+            highSchoolBtn.classList.remove('active');
+            collegeBtn.classList.remove('active');
+            professionalBtn.classList.remove('active');
+
+            button.classList.add('active');
+
+            displaySubjects();
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', displaySubjects);
+
+        allBtn.addEventListener('click', () => setActiveFilter('', allBtn));
+        highSchoolBtn.addEventListener('click', () => setActiveFilter('high_school', highSchoolBtn));
+        collegeBtn.addEventListener('click', () => setActiveFilter('college', collegeBtn));
+        professionalBtn.addEventListener('click', () => setActiveFilter('professional', professionalBtn));
+
+        // Initialize the page
+        displaySubjects();
+    </script>
+</body>
+</html>

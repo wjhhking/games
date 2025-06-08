@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MMLU Quiz</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background-color: #f9f9f9; padding: 20px; border-radius: 10px; }
+        h1, h2 { color: #333; }
+        .select-subject { margin: 20px 0; }
+        select, button { padding: 10px; font-size: 16px; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .flash { padding: 10px; background-color: #ffdddd; color: #ff0000; margin: 10px 0; border-radius: 5px; }
+        .question { margin: 20px 0; font-size: 18px; }
+        .options { margin: 20px 0; }
+        .option { margin: 10px 0; padding: 10px; background-color: #eee; border-radius: 5px; cursor: pointer; }
+        .option:hover { background-color: #ddd; }
+        .result { margin: 20px 0; padding: 20px; border-radius: 5px; }
+        .correct { background-color: #dff0d8; color: #3c763d; }
+        .incorrect { background-color: #f2dede; color: #a94442; }
+        .summary { margin: 20px 0; padding: 20px; background-color: #e8f5e9; border-radius: 5px; }
+        .score { font-size: 24px; margin: 10px 0; }
+        .hidden { display: none; }
+        .progress { margin-bottom: 20px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MMLU Quiz</h1>
+
+        <div id="flash-message" class="flash hidden"></div>
+
+        <!-- Subject Selection View -->
+        <div id="subject-view">
+            <div class="select-subject">
+                <h2>Select a Subject</h2>
+                <select id="subject-select">
+                    <option value="">-- Select Subject --</option>
+                    <option value="formal_logic">Formal Logic</option>
+                    <option value="abstract_algebra">Abstract Algebra</option>
+                    <option value="college_mathematics">College Mathematics</option>
+                    <option value="computer_security">Computer Security</option>
+                    <option value="high_school_mathematics">High School Mathematics</option>
+                </select>
+                <button id="start-quiz">Start Quiz</button>
+            </div>
+        </div>
+
+        <!-- Question View -->
+        <div id="question-view" class="hidden">
+            <div class="progress">
+                Question <span id="current-question">1</span> of <span id="total-questions">10</span>
+            </div>
+
+            <div class="question">
+                <h2 id="question-text"></h2>
+            </div>
+
+            <div class="options" id="options-container">
+                <!-- Options will be inserted here -->
+            </div>
+
+            <button id="submit-answer">Submit Answer</button>
+        </div>
+
+        <!-- Result View -->
+        <div id="result-view" class="hidden">
+            <div id="result-container" class="result">
+                <h2 id="result-header"></h2>
+                <p>Your answer: <span id="user-answer"></span></p>
+                <p>Correct answer: <span id="correct-answer"></span></p>
+                <p>Correct text: <span id="correct-text"></span></p>
+            </div>
+
+            <button id="next-question">Next Question</button>
+        </div>
+
+        <!-- Final Results View -->
+        <div id="results-view" class="hidden">
+            <div class="summary">
+                <h2 id="subject-name"></h2>
+                <div class="score">Score: <span id="correct-count">0</span>/<span id="total-count">0</span> (<span id="percentage">0</span>%)</div>
+            </div>
+
+            <button id="try-again">Try Another Subject</button>
+        </div>
+    </div>
+
+    <script>
+        // Quiz data will be loaded from JSON files
+        let quizData = null;
+        let currentSubject = '';
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+
+        // DOM Elements
+        const subjectView = document.getElementById('subject-view');
+        const questionView = document.getElementById('question-view');
+        const resultView = document.getElementById('result-view');
+        const resultsView = document.getElementById('results-view');
+        const flashMessage = document.getElementById('flash-message');
+
+        // Initialize the app
+        document.getElementById('start-quiz').addEventListener('click', startQuiz);
+        document.getElementById('submit-answer').addEventListener('click', submitAnswer);
+        document.getElementById('next-question').addEventListener('click', showNextQuestion);
+        document.getElementById('try-again').addEventListener('click', resetQuiz);
+
+        function showFlash(message) {
+            flashMessage.textContent = message;
+            flashMessage.classList.remove('hidden');
+            setTimeout(() => {
+                flashMessage.classList.add('hidden');
+            }, 3000);
+        }
+
+        async function startQuiz() {
+            const subjectSelect = document.getElementById('subject-select');
+            currentSubject = subjectSelect.value;
+
+            if (!currentSubject) {
+                showFlash('Please select a subject');
+                return;
+            }
+
+            try {
+                // Load the quiz data for this subject from a JSON file
+                const response = await fetch(`data/${currentSubject}.json`);
+                if (!response.ok) {
+                    throw new Error(`Failed to load data for ${currentSubject}`);
+                }
+
+                quizData = await response.json();
+
+                // Filter questions for the selected subject
+                currentQuestions = quizData.filter(q => q.subject === currentSubject);
+
+                if (currentQuestions.length === 0) {
+                    showFlash(`No questions found for ${currentSubject}`);
+                    return;
+                }
+
+                // Reset quiz state
+                currentQuestionIndex = 0;
+                userAnswers = [];
+
+                // Update UI
+                document.getElementById('total-questions').textContent = currentQuestions.length;
+
+                // Show the first question
+                showQuestion(currentQuestionIndex);
+
+                // Switch views
+                subjectView.classList.add('hidden');
+                questionView.classList.remove('hidden');
+
+            } catch (error) {
+                showFlash(`Error: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        function showQuestion(index) {
+            if (index >= currentQuestions.length) {
+                showResults();
+                return;
+            }
+
+            const question = currentQuestions[index];
+
+            // Update UI with question data
+            document.getElementById('current-question').textContent = index + 1;
+            document.getElementById('question-text').textContent = question.question;
+
+            // Create option elements
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            const options = ['A', 'B', 'C', 'D'];
+            options.forEach((letter, i) => {
+                const option = document.createElement('div');
+                option.className = 'option';
+
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'answer';
+                input.value = letter;
+                input.id = `option-${letter}`;
+
+                const label = document.createElement('label');
+                label.htmlFor = `option-${letter}`;
+                label.textContent = `${letter}. ${question.choices[i]}`;
+
+                option.appendChild(input);
+                option.appendChild(label);
+                optionsContainer.appendChild(option);
+            });
+        }
+
+        function submitAnswer() {
+            const selectedOption = document.querySelector('input[name="answer"]:checked');
+
+            if (!selectedOption) {
+                showFlash('Please select an answer');
+                return;
+            }
+
+            const userAnswer = selectedOption.value;
+            const currentQuestion = currentQuestions[currentQuestionIndex];
+
+            // Convert numerical answer to letter
+            let correctAnswer = currentQuestion.answer;
+            if (typeof correctAnswer === 'number' || !isNaN(parseInt(correctAnswer))) {
+                const answerIndex = parseInt(correctAnswer);
+                correctAnswer = String.fromCharCode(65 + answerIndex); // Convert to A, B, C, D
+            } else if (correctAnswer.length > 1) {
+                // Take first character if it's like "A)" or "B."
+                correctAnswer = correctAnswer[0];
+            }
+
+            const isCorrect = userAnswer === correctAnswer;
+
+            // Record the answer
+            userAnswers.push({
+                questionIndex: currentQuestionIndex,
+                userAnswer: userAnswer,
+                correctAnswer: correctAnswer,
+                isCorrect: isCorrect
+            });
+
+            // Show result
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.className = isCorrect ? 'result correct' : 'result incorrect';
+
+            document.getElementById('result-header').textContent = isCorrect ? 'Correct!' : 'Incorrect';
+            document.getElementById('user-answer').textContent = userAnswer;
+            document.getElementById('correct-answer').textContent = correctAnswer;
+            document.getElementById('correct-text').textContent = currentQuestion.choices[correctAnswer.charCodeAt(0) - 65];
+
+            questionView.classList.add('hidden');
+            resultView.classList.remove('hidden');
+        }
+
+        function showNextQuestion() {
+            currentQuestionIndex++;
+            resultView.classList.add('hidden');
+
+            if (currentQuestionIndex < currentQuestions.length) {
+                showQuestion(currentQuestionIndex);
+                questionView.classList.remove('hidden');
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            const total = userAnswers.length;
+            const correct = userAnswers.filter(a => a.isCorrect).length;
+            const percentage = Math.round((correct / total) * 100);
+
+            document.getElementById('subject-name').textContent = currentSubject.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            document.getElementById('correct-count').textContent = correct;
+            document.getElementById('total-count').textContent = total;
+            document.getElementById('percentage').textContent = percentage;
+
+            resultView.classList.add('hidden');
+            resultsView.classList.remove('hidden');
+        }
+
+        function resetQuiz() {
+            resultsView.classList.add('hidden');
+            subjectView.classList.remove('hidden');
+
+            // Reset UI elements
+            document.getElementById('subject-select').value = '';
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            // Reset quiz data
+            currentQuestionIndex = 0;
+            userAnswers = [];
+        }
+    </script>
+</body>
+</html>

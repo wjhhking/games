@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MMLU Quiz - Result</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background-color: #f9f9f9; padding: 20px; border-radius: 10px; }
+        h1 { color: #333; }
+        .result { margin: 20px 0; padding: 20px; border-radius: 5px; }
+        .correct { background-color: #dff0d8; color: #3c763d; }
+        .incorrect { background-color: #f2dede; color: #a94442; }
+        button { padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; cursor: pointer; width: 180px; }
+        button:hover { background-color: #45a049; }
+        .navigation { margin-top: 20px; }
+        .nav-row { margin-bottom: 10px; }
+        .progress-info { margin-top: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MMLU Quiz</h1>
+
+        <div class="result {% if result.is_correct %}correct{% else %}incorrect{% endif %}">
+            <h2>{% if result.is_correct %}Correct!{% else %}Incorrect{% endif %}</h2>
+            <p>Your answer: {{ answer }}</p>
+            <p>Correct answer: {{ result.correct_answer }}</p>
+            <p>Correct text: {{ result.correct_text }}</p>
+        </div>
+
+        <!-- Simple progress info based on backend state -->
+        <div class="progress-info">
+            {% set stats = backend.get_stats() %}
+            Question {{ stats.current_question }} of {{ stats.total_questions }}
+            <br>
+            Current Score: {{ stats.correct_count }} correct out of {{ stats.answered_count }} answered
+        </div>
+
+        <div class="navigation">
+            <div class="nav-row">
+                <a href="/next_question"><button>Next Question</button></a>
+            </div>
+
+            <div class="nav-row">
+                <form action="/jump_question" method="post">
+                    <input type="number" name="question_number" min="1" max="{{ stats.total_questions }}"
+                           placeholder="Go to question..." style="padding: 10px; width: 150px; margin-right: 10px;">
+                    <button type="submit">Jump</button>
+                </form>
+            </div>
+
+            <div class="nav-row">
+                <a href="/"><button>Back to Main Page</button></a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

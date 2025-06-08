@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Letter Pairs Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: #f0f0f0;
+            border: none;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: #ddd;
+        }
+        .content {
+            text-align: center;
+        }
+        .letter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px;
+            margin: 5px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+        .display {
+            font-size: 48px;
+            margin: 40px 0;
+            min-height: 72px;
+        }
+        .game-controls {
+            display: none;
+        }
+        .game-controls.active {
+            display: block;
+        }
+        #backButton {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="selectionPanel">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('fullSet')">Full Set</button>
+            <button class="tab" onclick="showTab('startsWith')">Starts With</button>
+            <button class="tab" onclick="showTab('endsWith')">Ends With</button>
+        </div>
+
+        <div id="fullSet" class="content">
+            <button onclick="startGame('full')">Full Set</button>
+        </div>
+
+        <div id="startsWith" class="content" style="display:none">
+            <div class="letter-grid">
+                <!-- JavaScript will populate this -->
+            </div>
+        </div>
+
+        <div id="endsWith" class="content" style="display:none">
+            <div class="letter-grid">
+                <!-- JavaScript will populate this -->
+            </div>
+        </div>
+    </div>
+
+    <div id="gamePanel" style="display:none">
+        <div class="display" id="display"></div>
+        <button onclick="nextClick()" id="nextButton">Next</button>
+        <button onclick="showSelection()" id="backButton">Back to Selection</button>
+    </div>
+
+    <script>
+        let currentPairs = [];
+        let currentIndex = 0;
+        let showingAnswer = false;
+
+        function showTab(tabName) {
+            document.querySelectorAll('.content').forEach(content => content.style.display = 'none');
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabName).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        function populateLetterGrids() {
+            const letters = 'abcdefghijklmnopqrstuvwz';
+            const grids = document.querySelectorAll('.letter-grid');
+            
+            grids.forEach((grid, gridIndex) => {
+                const prefix = gridIndex === 0 ? 'start_' : 'end_';
+                const buttonText = gridIndex === 0 ? 'Start ' : 'End ';
+                
+                letters.split('').forEach(letter => {
+                    const button = document.createElement('button');
+                    button.textContent = buttonText + letter;
+                    button.onclick = () => startGame(prefix + letter);
+                    grid.appendChild(button);
+                });
+            });
+        }
+
+        async function startGame(mode) {
+            const response = await fetch(`/get_pairs/${mode}`);
+            currentPairs = await response.json();
+            currentIndex = 0;
+            showingAnswer = false;
+            
+            document.getElementById('selectionPanel').style.display = 'none';
+            document.getElementById('gamePanel').style.display = 'block';
+            
+            showQuestion();
+        }
+
+        function showSelection() {
+            document.getElementById('gamePanel').style.display = 'none';
+            document.getElementById('selectionPanel').style.display = 'block';
+        }
+
+        function showQuestion() {
+            document.getElementById('display').textContent = currentPairs[currentIndex][0];
+            showingAnswer = false;
+        }
+
+        function showAnswer() {
+            document.getElementById('display').textContent = currentPairs[currentIndex][1];
+            showingAnswer = true;
+        }
+
+        function nextClick() {
+            if (showingAnswer) {
+                currentIndex = (currentIndex + 1) % currentPairs.length;
+                showQuestion();
+            } else {
+                showAnswer();
+            }
+        }
+
+        // Initialize the letter grids when the page loads
+        populateLetterGrids();
+    </script>
+</body>
+</html> 
