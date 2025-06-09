@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "learn-to-be-ai",
+    "learn-to-be-ai": "learn-to-be-ai"
+  },
+  "targets": {},
+  "etags": {}
+}
