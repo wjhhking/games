@@ -44,4 +44,10 @@ learner/android/app/profile
 learner/android/app/release
 
 # User-added ignores
+learner/data/
+
+# Lean / Lake build artifacts
+**/.lake/
+
+# User-added ignores
 learner/data/ 

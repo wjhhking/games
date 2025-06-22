@@ -2,22 +2,22 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class ProblemPage extends StatefulWidget {
-  const ProblemPage({
+class MultipleChoiceProblemPage extends StatefulWidget {
+  const MultipleChoiceProblemPage({
     super.key,
-    required this.subjectId,
-    required this.subjectName,
+    required this.title,
+    required this.problems,
   });
 
-  final String subjectId;
-  final String subjectName;
+  final String title;
+  final List<dynamic> problems;
 
   @override
-  State<ProblemPage> createState() => _ProblemPageState();
+  State<MultipleChoiceProblemPage> createState() =>
+      _MultipleChoiceProblemPageState();
 }
 
-class _ProblemPageState extends State<ProblemPage> {
-  List<dynamic> _problems = [];
+class _MultipleChoiceProblemPageState extends State<MultipleChoiceProblemPage> {
   int _currentProblemIndex = 0;
   int? _selectedChoiceIndex;
   bool? _isCorrect;
@@ -25,28 +25,21 @@ class _ProblemPageState extends State<ProblemPage> {
   @override
   void initState() {
     super.initState();
-    _loadProblems();
-  }
-
-  Future<void> _loadProblems() async {
-    final String response =
-        await rootBundle.loadString('data/mmlu/${widget.subjectId}.json');
-    final data = await json.decode(response);
-    setState(() {
-      _problems = data;
-    });
+    // The widget's 'problems' list can be used directly.
+    // No need to load anything here.
   }
 
   void _checkAnswer(int selectedIndex) {
     setState(() {
       _selectedChoiceIndex = selectedIndex;
-      _isCorrect = selectedIndex == _problems[_currentProblemIndex]['answer'];
+      _isCorrect =
+          selectedIndex == widget.problems[_currentProblemIndex]['answer'];
     });
   }
 
   void _nextProblem() {
     setState(() {
-      if (_currentProblemIndex < _problems.length - 1) {
+      if (_currentProblemIndex < widget.problems.length - 1) {
         _currentProblemIndex++;
         _selectedChoiceIndex = null;
         _isCorrect = null;
@@ -66,7 +59,7 @@ class _ProblemPageState extends State<ProblemPage> {
 
   void _jumpToProblem(int index) {
     setState(() {
-      if (index >= 0 && index < _problems.length) {
+      if (index >= 0 && index < widget.problems.length) {
         _currentProblemIndex = index;
         _selectedChoiceIndex = null;
         _isCorrect = null;
@@ -85,7 +78,7 @@ class _ProblemPageState extends State<ProblemPage> {
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
           ),
-          itemCount: _problems.length,
+          itemCount: widget.problems.length,
           itemBuilder: (context, index) {
             return ElevatedButton(
               onPressed: () {
@@ -106,10 +99,8 @@ class _ProblemPageState extends State<ProblemPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.subjectName),
-      ),
-      body: _problems.isEmpty
+      appBar: AppBar(title: Text(widget.title)),
+      body: widget.problems.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
@@ -117,46 +108,50 @@ class _ProblemPageState extends State<ProblemPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Question ${_currentProblemIndex + 1}/${_problems.length}',
+                    'Question ${_currentProblemIndex + 1}/${widget.problems.length}',
                     style: Theme.of(context).textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _problems[_currentProblemIndex]['question'],
+                    widget.problems[_currentProblemIndex]['question'],
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 24),
-                  ...(_problems[_currentProblemIndex]['choices']
+                  ...(widget.problems[_currentProblemIndex]['choices']
                           as List<dynamic>)
                       .asMap()
                       .entries
                       .map((entry) {
-                    int idx = entry.key;
-                    String choice = entry.value;
-                    Color? tileColor;
-                    Icon? trailingIcon;
-                    if (_selectedChoiceIndex == idx) {
-                      if (_isCorrect!) {
-                        tileColor = Colors.green.shade100;
-                        trailingIcon = const Icon(Icons.check_circle,
-                            color: Colors.green);
-                      } else {
-                        tileColor = Colors.red.shade100;
-                        trailingIcon =
-                            const Icon(Icons.cancel, color: Colors.red);
-                      }
-                    }
+                        int idx = entry.key;
+                        String choice = entry.value;
+                        Color? tileColor;
+                        Icon? trailingIcon;
+                        if (_selectedChoiceIndex == idx) {
+                          if (_isCorrect!) {
+                            tileColor = Colors.green.shade100;
+                            trailingIcon = const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                            );
+                          } else {
+                            tileColor = Colors.red.shade100;
+                            trailingIcon = const Icon(
+                              Icons.cancel,
+                              color: Colors.red,
+                            );
+                          }
+                        }
 
-                    return Card(
-                      color: tileColor,
-                      child: ListTile(
-                        title: Text(choice),
-                        trailing: trailingIcon,
-                        onTap: () => _checkAnswer(idx),
-                      ),
-                    );
-                  }),
+                        return Card(
+                          color: tileColor,
+                          child: ListTile(
+                            title: Text(choice),
+                            trailing: trailingIcon,
+                            onTap: () => _checkAnswer(idx),
+                          ),
+                        );
+                      }),
                 ],
               ),
             ),
@@ -167,8 +162,7 @@ class _ProblemPageState extends State<ProblemPage> {
             TextButton.icon(
               icon: const Icon(Icons.arrow_back),
               label: const Text('Previous'),
-              onPressed:
-                  _currentProblemIndex > 0 ? _previousProblem : null,
+              onPressed: _currentProblemIndex > 0 ? _previousProblem : null,
             ),
             TextButton(
               child: const Text('Jump To'),
@@ -177,7 +171,7 @@ class _ProblemPageState extends State<ProblemPage> {
             TextButton.icon(
               label: const Text('Next'),
               icon: const Icon(Icons.arrow_forward),
-              onPressed: _currentProblemIndex < _problems.length - 1
+              onPressed: _currentProblemIndex < widget.problems.length - 1
                   ? _nextProblem
                   : null,
             ),
@@ -186,4 +180,4 @@ class _ProblemPageState extends State<ProblemPage> {
       ),
     );
   }
-} 
+}

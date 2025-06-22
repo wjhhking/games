@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:learner/pages/dataset_list_page.dart';
+import 'package:learner/pages/main_datasets_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const DatasetListPage(),
+      home: const MainDatasetsPage(),
     );
   }
 }

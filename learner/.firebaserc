@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "learn-to-be-ai",
+    "default": "what-can-ai-do",
     "learn-to-be-ai": "learn-to-be-ai"
   },
   "targets": {},
