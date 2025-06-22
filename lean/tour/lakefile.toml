@@ -1,0 +1,6 @@
+name = "tour"
+version = "0.1.0"
+defaultTargets = ["Tour"]
+
+[[lean_lib]]
+name = "Tour"

@@ -1,0 +1,6 @@
+name = "simple_theorems"
+version = "0.1.0"
+
+[[lean_lib]]
+name = "simple_theorems"
+roots = ["Palindromes"]
