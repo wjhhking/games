@@ -9,8 +9,6 @@ def simplify(dir: str) -> str:
     paths = dir[1:].split('/')
     ans = []
 
-
-
     for p in paths:
         if p == '..':
             if ans:
